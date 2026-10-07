@@ -1,0 +1,90 @@
+[project]
+name = "diffusion"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+
+dependencies = ["isaaclab-dev"]
+
+[project.optional-dependencies]
+# Full Isaac Sim (pip package). Omit for the Newton / OV PhysX backends.
+isaacsim = ["isaaclab-dev[isaacsim]"]
+
+[[tool.uv.index]]
+url = "https://pypi.nvidia.com"
+explicit = false
+
+[[tool.uv.index]]
+name = "pypi-public"
+url = "https://pypi.org/simple"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+# unsafe-best-match resolves NVIDIA deps with versions mismatched across
+# pypi.nvidia.com and PyPI; prerelease=allow covers prerelease-only packages.
+[tool.uv]
+index-strategy = "unsafe-best-match"
+prerelease = "allow"
+# Platforms Isaac Lab supports (docs/source/setup/installation/index.rst and the
+# install CI matrix): Ubuntu 22.04 x86_64, Linux aarch64 (DGX Spark / Jetson), and
+# Windows 11 x86_64. Restricting the resolution universe keeps macOS and other
+# unsupported wheels out of uv.lock.
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
+# Isaac Lab owns the Newton, MuJoCo, and torch versions. Overrides replace requirements
+# for every requester, unlike constraints, which only intersect. The ``isaacsim`` and
+# ``importers`` extras pin older versions of these packages, so the overrides prevent downgrades.
+# Torch routes through [tool.uv.sources]. Values mirror [tool.isaaclab.versions] where applicable.
+override-dependencies = [
+    "numpy>=2",
+    "mujoco~=3.11.0",
+    "mujoco-warp~=3.11.0",
+    "newton[sim]==1.5.2",
+    # Force the Newton-matched schemas over isaacsim's ==0.2.0 pin.
+    "newton-usd-schemas>=0.4.1",
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+    "torchaudio==2.11.0",
+    # ovphysx caps packaging at <24 and isaacsim-core pins ==26.0; both caps are
+    # stricter than the code needs, so widening lets them resolve together at 26.0.
+    "packaging>=20,<27",
+]
+python-preference = "only-managed"
+package = false
+
+[tool.uv.sources]
+isaaclab-dev = { path = "IsaacLab" }
+omniverseclient = { index = "pypi-public" }
+ovphysx = { index = "pypi-public" }
+ovrtx = { index = "pypi-public" }
+ovstage = { index = "pypi-public" }
+torch = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { index = "pytorch-cu128", marker = "sys_platform == 'win32'" },
+    { index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'aarch64'" },
+]
+torchaudio = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { index = "pytorch-cu128", marker = "sys_platform == 'win32'" },
+    { index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'aarch64'" },
+]
+torchvision = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { index = "pytorch-cu128", marker = "sys_platform == 'win32'" },
+    { index = "pytorch-cu130", marker = "sys_platform == 'linux' and platform_machine == 'aarch64'" },
+]
+
+[tool.uv.pip]
+index-strategy = "unsafe-best-match"
+prerelease = "allow"
